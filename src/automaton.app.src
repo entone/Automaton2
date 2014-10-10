@@ -1,0 +1,11 @@
+%% -*- erlang -*-
+{application, automaton,
+ [{description, "automaton app"},
+  {vsn, "1"},
+  {modules, [
+    erlflux
+  ]},
+  {registered, []},
+  {mod, {e2_application, [automaton_app]}},
+  {env, []},
+  {applications, [kernel, stdlib]}]}.
