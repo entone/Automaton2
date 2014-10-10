@@ -40,7 +40,7 @@ def init_influx():
 init_influx()
 
 def on_connect(userdata, flags_dict, result):
-    cl.subscribe([("/node/light",1), ("outTopic",1)])
+    cl.subscribe([("/node/#",1), ("outTopic",1)])
 
 def on_message(client, userdata, message):
     try:

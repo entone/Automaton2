@@ -9,13 +9,11 @@ SYSTEM_MODE(MANUAL);
 
 byte ip[] = { 192, 168, 1, 251 };
 
-unsigned char KEY[16] = "111111111111111";
-unsigned char IV[16] = "111111111111111";
-
 void callback(char* topic, byte* payload, unsigned int length);
 void subscribe();
 MQTT client(ip, 1883, callback);
 AnalogSensor light(A2, 1);
+AnalogSensor pot(A4, 2);
 
 // recieve message
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -42,12 +40,16 @@ void subscribe(){
 
 void setup() {
     light.init();
+    pot.init();
     Serial.begin(9600);
     RGB.control(true);
     RGB.brightness(5);
     WiFi.connect();
     delay(1000);
-    while(!WiFi.ready()) Serial.println("Connecting Wifi...");
+    while(!WiFi.ready()){ 
+        Serial.println("Connecting Wifi...");
+        delay(100);
+    }
     
     // connect to the server
     client.connect("automaton");
@@ -82,7 +84,20 @@ String hexPrint(const unsigned char *buf, size_t len) {
     return s;
 }
 
+void sixteenRandomBytes(unsigned char buf[16]) {
+    for (int i = 0; i < 16; i++) {
+        buf[i] = rand() & 0xff;
+    }
+}
+
 int count = 0;
+
+void print_char(unsigned char msg[128], size_t len){
+    for(int i=0; i<len; i++){
+        Serial.write(msg[i]);
+    }
+    Serial.println("");
+}
 
 void loop() {
     if (client.isConnected()){
@@ -94,51 +109,40 @@ void loop() {
     }
 
     
-    int val = light.read();
+    int l = light.read();
+    int p = pot.read();
     
     count++;
     if(count == 300 && client.isConnected()){
-        client.publish("/node/light", val);
-        /*aes_context aes;
-        unsigned char key[16];
-        unsigned char iv[16];
-        unsigned char originalIV[16];
+        client.publish("/node/light", l);
+        client.publish("/node/pot", p);
+
+        unsigned char KEY[16];
+        sixteenRandomBytes(KEY);
+        unsigned char IV[16];
+        sixteenRandomBytes(IV);
         unsigned char buf[48];
- 
-        Serial.println("Key:");
-        hexPrint(KEY, 16);
- 
-        Serial.println("\nIV:");
-        Serial.println(hexPrint(IV, 16));
- 
-        // Our super secret message goes into buf
+        unsigned char originalIV[16];
+
+        memcpy(originalIV, IV, 16);
+        
         const char *original = "Hey! What a great demo! I can do encryption!";
         int length = strlen(original) + 1; // include null terminating byte
         memcpy(buf, original, length);
- 
-        // Esoterica: add PKCS #7 padding
         size_t paddedLength = pad(buf, length);
- 
-        // Print the plaintext directly
-        Serial.println("\nPlaintext:");
-        Serial.println((const char *)buf);
- 
-        // Print the plaintext as hex
-        Serial.println(hexPrint(buf, paddedLength));
- 
-        // Encrypt
+
+        aes_context aes;
         aes_setkey_enc(&aes, KEY, 128);
+        // Encrypt
+        print_char(buf, sizeof(buf));
         aes_crypt_cbc(&aes, AES_ENCRYPT, paddedLength, IV, buf, buf);
- 
-        // Print the ciphertext directly
-        Serial.println("\nCiphertext:");
-        Serial.println(hexPrint(buf, paddedLength));
- 
-        // Print the ciphertext as hex
-        String s = hexPrint(buf, paddedLength);
-        char o_buf[48]; 
-        s.toCharArray(o_buf, s.length());
-        client.publish("/node/light", *o_buf);*/
+        Serial.println("Encrypted");
+        print_char(buf, sizeof(buf));
+
+        aes_setkey_dec(&aes, KEY, 128);
+        aes_crypt_cbc(&aes, AES_DECRYPT, paddedLength, originalIV, buf, buf);
+        Serial.println("Decrypted");
+        print_char(buf, sizeof(buf));
         count = 0;
     }
 }
