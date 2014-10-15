@@ -43,8 +43,8 @@ spaces= [
 }]
 
 queries = [
-    "SELECT mean(value) as value FROM /^events.*/ GROUP BY time(5m) INTO 5m.:series_name.mean",
-    "SELECT mean(value) as value FROM /^events.*/ GROUP BY time(30m) INTO 30m.:series_name.mean",
-    "SELECT mean(value) as value FROM /^events.*/ GROUP BY time(1h) INTO 1h.:series_name.mean",
-    "SELECT mean(value) as value FROM /^events.*/ GROUP BY time(24h) INTO 24h.:series_name.mean",
+    "SELECT mean(value) as value, type FROM /^events.*/ GROUP BY time(5m), type INTO 5m.:series_name.[type].mean",
+    "SELECT mean(value) as value, type FROM /^events.*/ GROUP BY time(30m), type INTO 30m.:series_name.[type].mean",
+    "SELECT mean(value) as value, type FROM /^events.*/ GROUP BY time(1h), type INTO 1h.:series_name.[type].mean",
+    "SELECT mean(value) as value, type FROM /^events.*/ GROUP BY time(24h), type INTO 24h.:series_name.[type].mean",
 ]

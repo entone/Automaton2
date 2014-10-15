@@ -1,7 +1,7 @@
 // This #include statement was automatically added by the Spark IDE.
 #include "application.h"
 #include "libraries/MQTT/MQTT.h"
-#include "libraries/Base64/Base64.h"
+#include "libraries/AES/AES.h"
 #include "libraries/AnalogSensor/AnalogSensor.h"
 
 
@@ -14,6 +14,8 @@ void subscribe();
 MQTT client(ip, 1883, callback);
 AnalogSensor light(A2, 1);
 AnalogSensor pot(A4, 2);
+
+unsigned char KEY[16] = "111111111111111";
 
 // recieve message
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -46,11 +48,11 @@ void setup() {
     RGB.brightness(5);
     WiFi.connect();
     delay(1000);
+    Serial.println("running");
     while(!WiFi.ready()){ 
-        Serial.println("Connecting Wifi...");
-        delay(100);
+        Serial.println("Connecting to Wifi...");
+        delay(500);
     }
-    
     // connect to the server
     client.connect("automaton");
     delay(1000);
@@ -59,47 +61,13 @@ void setup() {
         client.publish("outTopic","helloéééé world");
         subscribe();
     }
-}
-// PKCS #7 padding
-// Do this before encrypting to get the message
-// up to a multiple of 16 bytes.
-size_t pad(unsigned char *buf, size_t messageLength) {
-    size_t paddedLength = (messageLength & ~15) + 16;
-    char pad = paddedLength - messageLength;
-    memset(buf + messageLength, pad, pad);
-    return paddedLength;
-}
-
-String hexPrint(const unsigned char *buf, size_t len) {
-    const char hex[] = "0123456789ABCDEF";
-    String s = String("");
-    for (size_t i = 0; i < len; i++) {
-        char c = buf[i];
-        char hexDigit = hex[(c >> 4) & 0xF];
-        s.concat(hexDigit);
-        hexDigit = hex[c & 0xF];
-        s.concat(hexDigit);
-        s.concat(' ');
-    }
-    return s;
-}
-
-void sixteenRandomBytes(unsigned char buf[16]) {
-    for (int i = 0; i < 16; i++) {
-        buf[i] = rand() & 0xff;
-    }
+    
 }
 
 int count = 0;
 
-void print_char(unsigned char msg[128], size_t len){
-    for(int i=0; i<len; i++){
-        Serial.write(msg[i]);
-    }
-    Serial.println("");
-}
-
 void loop() {
+    
     if (client.isConnected()){
         client.loop();
     }else{
@@ -107,42 +75,18 @@ void loop() {
         delay(1000);
         subscribe();
     }
-
     
     int l = light.read();
     int p = pot.read();
     
     count++;
-    if(count == 300 && client.isConnected()){
-        client.publish("/node/light", l);
-        client.publish("/node/pot", p);
-
-        unsigned char KEY[16];
-        sixteenRandomBytes(KEY);
-        unsigned char IV[16];
-        sixteenRandomBytes(IV);
-        unsigned char buf[48];
-        unsigned char originalIV[16];
-
-        memcpy(originalIV, IV, 16);
-        
-        const char *original = "Hey! What a great demo! I can do encryption!";
-        int length = strlen(original) + 1; // include null terminating byte
-        memcpy(buf, original, length);
-        size_t paddedLength = pad(buf, length);
-
-        aes_context aes;
-        aes_setkey_enc(&aes, KEY, 128);
-        // Encrypt
-        print_char(buf, sizeof(buf));
-        aes_crypt_cbc(&aes, AES_ENCRYPT, paddedLength, IV, buf, buf);
-        Serial.println("Encrypted");
-        print_char(buf, sizeof(buf));
-
-        aes_setkey_dec(&aes, KEY, 128);
-        aes_crypt_cbc(&aes, AES_DECRYPT, paddedLength, originalIV, buf, buf);
-        Serial.println("Decrypted");
-        print_char(buf, sizeof(buf));
+    if(count == 100 && client.isConnected()){
+        unsigned char l_out[64];
+        aes_128_encrypt(l, KEY, l_out);
+        client.publish("/node/light", l_out, sizeof(l_out));
+        unsigned char p_out[64]; 
+        aes_128_encrypt(p, KEY, p_out);
+        client.publish("/node/pot", p_out, sizeof(p_out));
         count = 0;
     }
 }
