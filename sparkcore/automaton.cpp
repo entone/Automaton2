@@ -7,7 +7,7 @@
 
 SYSTEM_MODE(MANUAL);
 
-byte ip[] = { 192, 168, 1, 251 };
+byte ip[] = { 192, 168, 1, 7 };
 
 void callback(char* topic, byte* payload, unsigned int length);
 void subscribe();
@@ -24,13 +24,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
     p[length] = NULL;
     String message(p);
 
-    if (message.equals("RED"))    
+    if (message.equals("RED"))
         RGB.color(255, 0, 0);
-    else if (message.equals("GREEN"))    
+    else if (message.equals("GREEN"))
         RGB.color(0, 255, 0);
-    else if (message.equals("BLUE"))    
+    else if (message.equals("BLUE"))
         RGB.color(0, 0, 255);
-    else    
+    else
         RGB.color(255, 255, 255);
     delay(1000);
 }
@@ -49,7 +49,7 @@ void setup() {
     WiFi.connect();
     delay(1000);
     Serial.println("running");
-    while(!WiFi.ready()){ 
+    while(!WiFi.ready()){
         Serial.println("Connecting to Wifi...");
         delay(500);
     }
@@ -61,13 +61,13 @@ void setup() {
         client.publish("outTopic","helloéééé world");
         subscribe();
     }
-    
+
 }
 
 int count = 0;
 
 void loop() {
-    
+
     if (client.isConnected()){
         client.loop();
     }else{
@@ -75,16 +75,16 @@ void loop() {
         delay(1000);
         subscribe();
     }
-    
+
     int l = light.read();
     int p = pot.read();
-    
+
     count++;
     if(count == 100 && client.isConnected()){
         unsigned char l_out[64];
         aes_128_encrypt(l, KEY, l_out);
         client.publish("/node/light", l_out, sizeof(l_out));
-        unsigned char p_out[64]; 
+        unsigned char p_out[64];
         aes_128_encrypt(p, KEY, p_out);
         client.publish("/node/pot", p_out, sizeof(p_out));
         count = 0;
