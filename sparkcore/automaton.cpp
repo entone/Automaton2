@@ -7,7 +7,7 @@
 
 SYSTEM_MODE(MANUAL);
 
-byte ip[] = { 192, 168, 1, 7 };
+byte ip[] = { 192, 168, 1, 9 };
 
 void callback(char* topic, byte* payload, unsigned int length);
 void subscribe();
@@ -64,29 +64,28 @@ void setup() {
 
 }
 
-int count = 0;
+unsigned char l_out[64];
+unsigned char p_out[64];
+String myIDStr = Spark.deviceID();
 
 void loop() {
-
-    if (client.isConnected()){
+    Serial.println("Checking mqtt connection");
+    Serial.println(myIDStr);
+    if(client.isConnected()){
+        Serial.println("Connected");
+        Serial.println("Handle mqtt incoming");
         client.loop();
-    }else{
-        client.connect("automaton");
-        delay(1000);
-        subscribe();
-    }
-
-    int l = light.read();
-    int p = pot.read();
-
-    count++;
-    if(count == 100 && client.isConnected()){
-        unsigned char l_out[64];
+        Serial.println("getting sensor values");
+        int l = light.read();
+        int p = pot.read();
+        Serial.println("encrypt light");
         aes_128_encrypt(l, KEY, l_out);
+        Serial.println("publish light");
         client.publish("/node/light", l_out, sizeof(l_out));
-        unsigned char p_out[64];
+        Serial.println("encrypt pot");
         aes_128_encrypt(p, KEY, p_out);
+        Serial.println("publish pot");
         client.publish("/node/pot", p_out, sizeof(p_out));
-        count = 0;
     }
+    Serial.println("Looped");
 }

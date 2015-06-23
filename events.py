@@ -1,7 +1,7 @@
  # -*- coding: utf-8 -*-
 
 import paho.mqtt.client as mqtt
-from influxdb import client as influxdb
+#from influxdb import client as influxdb
 import config
 import logging
 import sys
@@ -55,7 +55,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
-db = influxdb.InfluxDBClient("localhost", 8086, "root", "root", config.database_name)
+#db = influxdb.InfluxDBClient("localhost", 8086, "root", "root", config.database_name)
 
 cl = mqtt.Client(client_id="client123456", userdata={"name":"client123456"})
 cl.connect("localhost")
@@ -68,8 +68,8 @@ def init_influx():
     }
     try:
         res = db.request(
-            url="cluster/database_configs/{}".format(config.database_name), 
-            method="POST", 
+            url="cluster/database_configs/{}".format(config.database_name),
+            method="POST",
             data=data,
             status_code=201
         )
@@ -77,9 +77,10 @@ def init_influx():
     except Exception as e:
         logger.warning(e)
 
-init_influx()
+#init_influx()
 
 def on_connect(userdata, flags_dict, result):
+    logger.info("Open")
     cl.subscribe([("/node/#",1), ("outTopic",1)])
 
 def on_message(client, userdata, message):
@@ -106,8 +107,9 @@ def on_message(client, userdata, message):
     ]
     logger.info("Writing: {}".format(data))
     try:
-        res = db.write_points(data)
-        logger.info(res)
+        pass
+        #res = db.write_points(data)
+        #logger.info(res)
     except Exception as e:
         logger.warning(e)
 

@@ -46,7 +46,7 @@ void print_char(char msg[128], size_t len){
     Serial.println("");
 }
 
-void aes_128_encrypt(int value, unsigned char key[16], unsigned char output[64]){        
+void aes_128_encrypt(int value, unsigned char key[16], unsigned char output[64]){
     unsigned char buf[48];
     unsigned char IV[16];
     //generate random IV
@@ -63,11 +63,6 @@ void aes_128_encrypt(int value, unsigned char key[16], unsigned char output[64])
 
     aes_context aes;
     aes_setkey_enc(&aes, key, 128);
-    // Encrypt
-    Serial.println("Original");
-    print_char(buf, length);
     aes_crypt_cbc(&aes, AES_ENCRYPT, paddedLength, IV, buf, buf);
-    Serial.println("Encrypted");
     append(output, buf, 16, sizeof(buf));
-    print_char(output, sizeof(output));
 }
