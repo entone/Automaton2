@@ -7,13 +7,16 @@
 
 SYSTEM_MODE(MANUAL);
 
-byte ip[] = { 192, 168, 1, 9 };
+byte ip[] = { 192, 168, 1, 174 };
 
 void callback(char* topic, byte* payload, unsigned int length);
 void subscribe();
 MQTT client(ip, 1883, callback);
 AnalogSensor light(A2, 1);
 AnalogSensor pot(A4, 2);
+String myIDStr = Spark.deviceID();
+char id[30];
+
 
 unsigned char KEY[16] = "111111111111111";
 
@@ -40,6 +43,12 @@ void subscribe(){
         client.subscribe("inTopic");
 }
 
+void connect(){
+    myIDStr.toCharArray(id, 30);
+    client.connect(id);
+    delay(1000);
+}
+
 void setup() {
     light.init();
     pot.init();
@@ -54,8 +63,7 @@ void setup() {
         delay(500);
     }
     // connect to the server
-    client.connect("automaton");
-    delay(1000);
+    connect();
     // publish/subscribe
     if (client.isConnected()) {
         client.publish("outTopic","helloéééé world");
@@ -64,28 +72,28 @@ void setup() {
 
 }
 
-unsigned char l_out[64];
-unsigned char p_out[64];
-String myIDStr = Spark.deviceID();
-
+char l_out[10];
+char p_out[10];
+int count = 0;
 void loop() {
-    Serial.println("Checking mqtt connection");
-    Serial.println(myIDStr);
-    if(client.isConnected()){
-        Serial.println("Connected");
-        Serial.println("Handle mqtt incoming");
-        client.loop();
-        Serial.println("getting sensor values");
-        int l = light.read();
-        int p = pot.read();
-        Serial.println("encrypt light");
-        aes_128_encrypt(l, KEY, l_out);
+    client.loop();
+    count++;
+    if(client.isConnected() && count == 100){
+        Serial.println(count);
+        String l = String(light.read(), DEC);
+        String p = String(pot.read(), DEC);
+        //Serial.println("encrypt light");
+        //aes_128_encrypt(l, KEY, l_out);
         Serial.println("publish light");
-        client.publish("/node/light", l_out, sizeof(l_out));
-        Serial.println("encrypt pot");
-        aes_128_encrypt(p, KEY, p_out);
+        l.toCharArray(l_out, 10);
+        p.toCharArray(p_out, 10);
+        client.publish("/node/light", l_out);
+        //Serial.println("encrypt pot");
+        //aes_128_encrypt(p, KEY, p_out);
         Serial.println("publish pot");
-        client.publish("/node/pot", p_out, sizeof(p_out));
+        client.publish("/node/pot", p_out);
+        count = 0;
+    }else if(!client.isConnected()){
+        connect();
     }
-    Serial.println("Looped");
 }

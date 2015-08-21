@@ -85,18 +85,13 @@ def on_connect(userdata, flags_dict, result):
 
 def on_message(client, userdata, message):
     try:
-        val = decrypt(message.payload, KEY)
-        val = int(val)
+        #val = decrypt(message.payload, KEY)
+        logger.info(message.payload)
+        val = int(message.payload)
     except:
         val = 0
 
     typ = message.topic.split("/")[-1]
-    if typ == "encrypted":
-        d = decrypt(message.payload, KEY)
-        parts = d.split("\x00")
-        logger.info(parts[0]);
-        return
-
     client = userdata.get("name")
     data = [
         dict(
