@@ -77,20 +77,23 @@ char p_out[10];
 int count = 0;
 void loop() {
     client.loop();
+    light.read();
+    pot.read();
     count++;
     if(client.isConnected() && count == 100){
-        Serial.println(count);
         String l = String(light.read(), DEC);
         String p = String(pot.read(), DEC);
         //Serial.println("encrypt light");
         //aes_128_encrypt(l, KEY, l_out);
         Serial.println("publish light");
+        Serial.println(l);
         l.toCharArray(l_out, 10);
-        p.toCharArray(p_out, 10);
         client.publish("/node/light", l_out);
         //Serial.println("encrypt pot");
         //aes_128_encrypt(p, KEY, p_out);
         Serial.println("publish pot");
+        Serial.println(p);
+        p.toCharArray(p_out, 10);
         client.publish("/node/pot", p_out);
         count = 0;
     }else if(!client.isConnected()){
