@@ -83,14 +83,19 @@ def on_connect(userdata, flags_dict, result):
     logger.info("Open")
     cl.subscribe([("/node/#",1), ("outTopic",1)])
 
-def on_message(client, userdata, message):
-    try:
-        #val = decrypt(message.payload, KEY)
-        logger.info(message.payload)
-        val = int(message.payload)
-    except:
-        val = 0
+def parse_value(val, default=0):
+    trys = [int, float]
+    for i in trys:
+        try:
+            return i(val)
+        except Exception as e:
+            continue
+    else:
+        return default
 
+def on_message(client, userdata, message):
+    logger.info(message.payload)
+    val = parse_value(message.payload)
     typ = message.topic.split("/")[-1]
     client = userdata.get("name")
     data = [

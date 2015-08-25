@@ -3,7 +3,12 @@
 #include "libraries/MQTT/MQTT.h"
 #include "libraries/AES/AES.h"
 #include "libraries/AnalogSensor/AnalogSensor.h"
+#include "libraries/DHT/DHT.h"
 
+#define DHTPIN D0
+#define DHTTYPE DHT22
+
+DHT dht(DHTPIN, DHTTYPE);
 
 SYSTEM_MODE(MANUAL);
 
@@ -52,6 +57,7 @@ void connect(){
 void setup() {
     light.init();
     pot.init();
+    dht.begin();
     Serial.begin(9600);
     RGB.control(true);
     RGB.brightness(5);
@@ -74,6 +80,8 @@ void setup() {
 
 char l_out[10];
 char p_out[10];
+char h_out[10];
+char t_out[10];
 int count = 0;
 void loop() {
     client.loop();
@@ -83,6 +91,14 @@ void loop() {
     if(client.isConnected() && count == 100){
         String l = String(light.read(), DEC);
         String p = String(pot.read(), DEC);
+        sprintf(h_out, "%.2f", dht.readHumidity());
+        sprintf(t_out, "%.2f", dht.readTemperature(false));
+        Serial.println("Humidity: ");
+        Serial.println(h_out);
+        Serial.println("Temp: ");
+        Serial.println(t_out);
+        client.publish("/node/temperature", t_out);
+        client.publish("/node/humidity", h_out);
         //Serial.println("encrypt light");
         //aes_128_encrypt(l, KEY, l_out);
         Serial.println("publish light");
